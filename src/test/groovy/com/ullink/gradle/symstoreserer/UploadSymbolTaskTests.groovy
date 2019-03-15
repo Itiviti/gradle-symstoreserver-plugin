@@ -8,12 +8,12 @@ import spock.lang.Specification
 
 class UploadSymbolTaskTests extends Specification {
 
-    static UploadSymbolTask applyPluginAndGetTask(File zipFile) {
+    static UploadSymbolTask applyPluginAndGetTask(File file) {
         def project = ProjectBuilder.builder().build()
         project.version = '1.2.3'
         project.apply plugin: 'symstore-server'
         def task = (UploadSymbolTask) project.tasks['uploadSymbol']
-        task.zipPath = zipFile.path
+        task.path = file.path
         task.serverUrl = 'http://localhost:1234/'
         return task
     }
@@ -45,7 +45,7 @@ class UploadSymbolTaskTests extends Specification {
         given:
         def zipFile = newTempZipFile()
         def uploadTask = applyPluginAndGetTask(zipFile)
-        uploadTask.zipPath = zipPath
+        uploadTask.path = zipPath
 
         when:
         uploadTask.upload()
@@ -65,7 +65,7 @@ class UploadSymbolTaskTests extends Specification {
         def mockHttpBuilder = new MockHttpBuilder(success: false)
         def zipFile = newTempZipFile()
         def uploadTask = applyPluginAndGetTask(zipFile)
-        uploadTask.zipPath = zipFile.path
+        uploadTask.path = zipFile.path
         uploadTask.serverUrl = 'whatever'
         uploadTask.createHttpBuilder = { mockHttpBuilder}
 
@@ -79,7 +79,7 @@ class UploadSymbolTaskTests extends Specification {
         zipFile.delete()
     }
 
-    void 'Given all information provided then zip file is upload successfully'() {
+    void 'Given all information provided then zip file is uploaded successfully'() {
         given:
         final serverUrlSent = 'http://server:1234/'
         def mockHttpBuilder = new MockHttpBuilder()
@@ -105,7 +105,29 @@ class UploadSymbolTaskTests extends Specification {
         zipFile.delete()
     }
 
-    void 'Given all information provided and something is wrong server side then an exception is thrown with server message'() {
+    void 'Given a folder then it is zipped and uploaded successfully'() {
+        given:
+        def mockHttpBuilder = new MockHttpBuilder()
+        def folder = File.createTempDir()
+        def subFolder = new File(folder, 'subfolder')
+        subFolder.mkdir()
+        def symbolFile = new File(subFolder, 'whatever.pdb')
+        symbolFile.createNewFile()
+        def uploadTask = applyPluginAndGetTask(folder)
+        uploadTask.serverUrl = 'http://server:1234/'
+        uploadTask.createHttpBuilder = { mockHttpBuilder }
+
+        when:
+        uploadTask.upload()
+
+        then:
+        mockHttpBuilder.method == Method.POST
+
+        cleanup:
+        folder.deleteDir()
+    }
+
+    void 'Given something went wrong on symbols server side then an exception is thrown with server message'() {
         given:
         def errorMessage = 'This an error message !'
         def mockHttpBuilder = new MockHttpBuilder()
