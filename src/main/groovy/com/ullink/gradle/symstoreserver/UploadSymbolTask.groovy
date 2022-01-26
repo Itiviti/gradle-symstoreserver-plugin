@@ -11,6 +11,7 @@ import org.apache.http.impl.client.HttpClients
 import org.gradle.api.GradleException
 import org.gradle.api.internal.ConventionTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.json.JSONObject
 
@@ -51,6 +52,7 @@ class UploadSymbolTask extends ConventionTask {
     String path
 
     // for unit tests purposes
+    @Internal
     Closure<CloseableHttpClient> createHttpClient = { HttpClients.createDefault() }
 
     @TaskAction
